@@ -4,7 +4,6 @@ import os
 import csv
 import json
 from datetime import datetime
-from tkcalendar import Calendar  # For the date picker
 import glob
 
 class AttendanceViewer:
@@ -262,14 +261,17 @@ class AttendanceViewer:
             file_count = 1
         
         record_count = 0
+        last_loaded_file = None
         
-        for file_path in files:
+        for f in files:
             try:
-                if not os.path.exists(file_path):
+                if not os.path.exists(f):
                     continue
                 
-                with open(file_path, mode='r', newline='') as file:
-                    reader = csv.DictReader(file)
+                last_loaded_file = f
+                
+                with open(f, mode='r', newline='') as csvfile:
+                    reader = csv.DictReader(csvfile)
                     
                     for row in reader:
                         # Get values with defaults
@@ -289,7 +291,7 @@ class AttendanceViewer:
                         record_count += 1
                 
             except Exception as e:
-                messagebox.showerror("Error", f"Failed to load data from {file_path}: {str(e)}")
+                messagebox.showerror("Error", f"Failed to load data from {f}: {str(e)}")
         
         # Sort by date (newest first)
         self.tree.heading("Date", command=lambda: self.sort_by_date(False))
@@ -299,8 +301,9 @@ class AttendanceViewer:
             self.status_var.set(f"Loaded {record_count} records from {file_count} file(s)")
             self.selected_date_var.set("Showing all files")
         else:
-            self.status_var.set(f"Loaded {record_count} records from {os.path.basename(file_path)}")
-            self.selected_date_var.set(f"Showing file: {os.path.basename(file_path)}")
+            display_name = os.path.basename(last_loaded_file) if last_loaded_file else "unknown"
+            self.status_var.set(f"Loaded {record_count} records from {display_name}")
+            self.selected_date_var.set(f"Showing file: {display_name}")
     
     def sort_by_date(self, descending=True):
         """Sort tree by date column"""

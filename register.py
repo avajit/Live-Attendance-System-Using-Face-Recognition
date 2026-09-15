@@ -261,7 +261,9 @@ class StudentRegistrationApp:
     def detect_faces(self, rgb_frame):
         """Detect faces in the frame using the appropriate method"""
         if self.use_landmarks and self.count < 100:
-            faces = self.face_detector(rgb_frame, 1)
+            # Convert to grayscale for dlib (most reliable format)
+            gray = cv2.cvtColor(rgb_frame, cv2.COLOR_RGB2GRAY)
+            faces = self.face_detector(gray, 1)
             if not faces:
                 face_locations = face_recognition.face_locations(rgb_frame)
                 faces = [dlib.rectangle(left, top, right, bottom) 

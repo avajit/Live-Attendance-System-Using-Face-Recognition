@@ -26,8 +26,10 @@ def already_marked_today(enroll, filename):
     if not os.path.exists(filename):
         return False
     with open(filename, 'r') as f:
-        for line in f.readlines():
-            if enroll in line:
+        reader = csv.reader(f)
+        for row in reader:
+            # Match enrollment column exactly (index 2)
+            if len(row) > 2 and row[2].strip() == enroll:
                 return True
     return False
 
@@ -46,8 +48,9 @@ def recognize_faces():
 
     print(f"🔍 Loaded {len(faces_embeddings)} embeddings for {len(set(faces_labels))} classes")
 
-    # ✅ Train KNN classifier
-    knn = KNeighborsClassifier(n_neighbors=3, metric="euclidean")
+    # ✅ Train KNN classifier (handle case where few images exist)
+    n_neighbors = min(3, len(faces_embeddings))
+    knn = KNeighborsClassifier(n_neighbors=n_neighbors, metric="euclidean")
     knn.fit(list(faces_embeddings), list(faces_labels))
 
     # ✅ Load FaceNet model
@@ -57,6 +60,10 @@ def recognize_faces():
     face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
     cap = cv2.VideoCapture(0)
+    if not cap.isOpened():
+        print("❌ Could not open webcam.")
+        return
+    
     attendance = {}
     filename = get_today_filename()
 
@@ -76,11 +83,17 @@ def recognize_faces():
             print("❌ Failed to access webcam.")
             break
 
+        # Handle BGRA frames (some Windows cameras)
+        if len(frame.shape) == 3 and frame.shape[2] == 4:
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
+
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         faces = face_cascade.detectMultiScale(gray, scaleFactor=1.2, minNeighbors=5)
 
         for (x, y, w, h) in faces:
             face_img = frame[y:y+h, x:x+w]  
+            if face_img.size == 0:
+                continue
             face_rgb = cv2.cvtColor(face_img, cv2.COLOR_BGR2RGB)
 
             try:

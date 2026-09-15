@@ -1,8 +1,13 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 import os
+import sys
+import subprocess
 from PIL import Image, ImageTk
 import webbrowser
+
+# Base directory for resolving relative paths
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 class AttendanceSystem:
     def __init__(self, root):
@@ -71,10 +76,10 @@ class AttendanceSystem:
         
         # Define the 4 images with their functions
         box_data = [
-            {"text": "1. Student Registration", "command": self.register_student, "image":"images/student.jpg"},
-            {"text": "2. Train Data", "command": self.train_model, "image": "images/train_data.jpg"},
-            {"text": "3. Take Attendance", "command": self.start_recognition, "image": "images/face_detector.png"},
-            {"text": "4. View Attendance", "command": self.view_records, "image": "images/attendance.jpg"}
+            {"text": "1. Student Registration", "command": self.register_student, "image": os.path.join(BASE_DIR, "images/student.jpg")},
+            {"text": "2. Train Data", "command": self.train_model, "image": os.path.join(BASE_DIR, "images/train_data.jpg")},
+            {"text": "3. Take Attendance", "command": self.start_recognition, "image": os.path.join(BASE_DIR, "images/face_detector.png")},
+            {"text": "4. View Attendance", "command": self.view_records, "image": os.path.join(BASE_DIR, "images/attendance.jpg")}
         ]
         
         self.images = []  # keep references so images are not garbage-collected
@@ -125,47 +130,41 @@ class AttendanceSystem:
         
         self.root.config(menu=menubar)
     
-    def register_student(self):
-        self.status_var.set("Registering new student...")
-        self.root.update()
+    def _run_script(self, script_name):
+        """Run a Python script as a non-blocking subprocess"""
+        script_path = os.path.join(BASE_DIR, script_name)
         try:
-            os.system("python register.py")
-            self.status_var.set("Student registration completed")
-            messagebox.showinfo("Success", "Student registered successfully!")
+            subprocess.Popen(
+                [sys.executable, script_path],
+                cwd=BASE_DIR
+            )
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to register student: {str(e)}")
-            self.status_var.set("Error during registration")
+            messagebox.showerror("Error", f"Failed to launch {script_name}: {str(e)}")
+            self.status_var.set(f"Error launching {script_name}")
+    
+    def register_student(self):
+        self.status_var.set("Launching student registration...")
+        self.root.update()
+        self._run_script("register.py")
+        self.status_var.set("Student registration window opened")
     
     def train_model(self):
-        self.status_var.set("Training recognition model...")
+        self.status_var.set("Launching model training...")
         self.root.update()
-        try:
-            os.system("python train_model.py")
-            self.status_var.set("Model training completed")
-            messagebox.showinfo("Success", "Model trained successfully!")
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to train model: {str(e)}")
-            self.status_var.set("Error during training")
+        self._run_script("train_model.py")
+        self.status_var.set("Model training launched")
     
     def start_recognition(self):
-        self.status_var.set("Starting attendance recognition...")
+        self.status_var.set("Launching attendance recognition...")
         self.root.update()
-        try:
-            os.system("python recognize.py")
-            self.status_var.set("Attendance recognition completed")
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to start recognition: {str(e)}")
-            self.status_var.set("Error during recognition")
+        self._run_script("recognize.py")
+        self.status_var.set("Attendance recognition launched")
     
     def view_records(self):
-        self.status_var.set("Viewing attendance records...")
+        self.status_var.set("Launching attendance records viewer...")
         self.root.update()
-        try:
-            os.system("python records.py")
-            self.status_var.set("Records displayed")
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to view records: {str(e)}")
-            self.status_var.set("Error viewing records")
+        self._run_script("records.py")
+        self.status_var.set("Records viewer opened")
     
     def show_docs(self):
         webbrowser.open("https://github.com/yourusername/face-recognition-attendance/docs")

@@ -36,6 +36,10 @@ def train_model():
             if not os.path.isfile(img_path):
                 continue
 
+            # Skip non-image files
+            if not img_file.lower().endswith(('.jpg', '.jpeg', '.png', '.bmp', '.tiff')):
+                continue
+
             try:
                 img = Image.open(img_path).convert('RGB')
                 img_np = np.array(img)
